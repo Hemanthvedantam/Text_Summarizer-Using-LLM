@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumText Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(45deg, #6366f1, #a855f7, #ec4899);
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --deep-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
+            --text-primary: #f8f9fa;
+            --text-secondary: #e9ecef;
+            --accent-glowing: rgba(236, 72, 153, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 50%, 
+                #2a2a3a 0%, 
+                #1a1a24 100%);
+            color: var(--text-primary);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .background-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary-gradient);
+            opacity: 0.1;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            min-height: 100vh;
+        }
+
+        /* Input Section */
+        .input-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--deep-shadow);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .input-panel:hover {
+            transform: translateY(-4px);
+        }
+
+        .input-header {
+            margin-bottom: 2rem;
+        }
+
+        .input-title {
+            font-size: 2.25rem;
+            background: linear-gradient(45deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .input-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-toggle {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .input-toggle.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+        }
+
+        .text-input {
+            width: 100%;
+            min-height: 400px;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+            transition: all 0.3s ease;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: var(--accent-glowing);
+            box-shadow: 0 0 24px var(--accent-glowing);
+        }
+
+        .analyze-button {
+            width: 100%;
+            padding: 1.25rem;
+            margin-top: 2rem;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .analyze-button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 32px rgba(236, 72, 153, 0.3);
+        }
+
+        /* Results Section */
+        .results-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--deep-shadow);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease-out;
+        }
+
+        .results-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .summary-content {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            border-radius: 16px;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .wordcloud-container {
+            width: 100%;
+            height: 300px;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+
+
+        /* Add these to the existing style section */
+.flash-messages {
+    margin-bottom: 1.5rem;
+}
+
+.flash {
+    padding: 1rem;
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid rgba(255, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.options-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.input-section {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .input-section.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-wrapper:hover {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.05);
+        }
+
+        .file-upload-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-label {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .selected-file {
+            margin-top: 1rem;
+            color: #a855f7;
+            font-weight: 500;
+        }
+
+.length-select {
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-radius: 8px;
+    flex: 1;
+}
+
+.download-form {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.download-button {
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.download-button:hover {
+    background: var(--primary-gradient);
+}
+
+.metric-sub {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 0.5rem;
+}
+
+        .wordcloud-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 16px;
+        }
+
+        /* Loading State */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            place-items: center;
+            border-radius: 24px;
+            z-index: 100;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #a855f7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .summary-content {
+    white-space: pre-line;
+    line-height: 1.8;
+}
+
+/* Add bullet styling */
+#summary-text {
+    padding-left: 1.5rem;
+}
+
+#summary-text::before {
+    content: "• ";
+    margin-left: -1.5rem;
+    padding-right: 0.5rem;
+}
+
+
+.chat-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 380px;
+    max-height: 70vh;
+    background: rgba(40, 40, 60, 0.95); /* More opaque background */
+    backdrop-filter: blur(16px);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transform: translateY(120%);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    z-index: 9999; /* Ensure highest z-index */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-visible {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.3); /* Add contrasting background */
+}
+
+.chat-input {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-input input {
+    width: 100% !important;
+    padding: 0.75rem !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    color: white !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Ensure chat toggle stays on top */
+.chat-toggle {
+    z-index: 10000; /* Higher than chat container */
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 60px;
+    height: 60px;
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(168, 85, 247, 0.3);
+    display: grid;
+    place-items: center;
+}
+
+.results-panel {
+    position: relative;
+    z-index: 1; /* Lower than chat interface */
+}
+
+.message-bubble {
+    max-width: 80%;
+    padding: 1rem;
+    border-radius: 16px;
+    animation: fadeIn 0.3s ease;
+    backdrop-filter: blur(8px);
+}
+
+.user-message {
+    background: rgba(168, 85, 247, 0.2);
+    border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.bot-message {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                padding: 2rem 1rem;
+            }
+            
+            .input-panel,
+            .results-panel {
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-overlay"></div>
+    
+    <div class="app-container">
+        <!-- Input Panel -->
+        <form class="input-panel" method="POST" enctype="multipart/form-data">
+            <div class="input-header">
+                <h1 class="input-title">QuantumText Analyzer</h1>
+                <div class="input-controls">
+                    <button type="button" class="input-toggle active" data-input="text">Text</button>
+                    <button type="button" class="input-toggle" data-input="file">File</button>
+                    <button type="button" class="input-toggle" data-input="url">URL</button>
+                </div>
+                <input type="hidden" name="input_method" id="input_method" value="text">
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for message in messages %}
+                            <div class="flash">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% endwith %}
+            <!-- Text Input -->
+            <div class="input-section active" id="text-input">
+                <textarea 
+    class="text-input"
+    name="input_text"
+    placeholder="Paste your text here (minimum 100 words)..."
+    spellcheck="false"
+>{% if request.form.get('input_text') %}{{ request.form.get('input_text') }}{% endif %}</textarea>
+
+            </div>
+
+            <div class="input-section" id="file-input">
+                <div class="file-upload-wrapper">
+                    <input type="file" class="file-upload-input" name="file" accept=".pdf,.docx,.txt,.mp3,.wav">
+                    <div class="file-upload-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-upload">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p>Click to upload or drag and drop</p>
+                        <p class="supported-formats">(PDF, DOCX, TXT, MP3, WAV)</p>
+                        <div class="selected-file">
+                            {% if session.file_name %}
+                                Selected: {{ session.file_name }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-section" id="url-input">
+                <input type="url" class="text-input" name="url" placeholder="Enter website URL to analyze (e.g., https://example.com)" value="{{ request.form.get('url', '') }}">
+            </div>
+
+            <div class="options-row">
+                <select name="summary_length" class="length-select">
+                    <option value="150" {% if request.form.get('summary_length', '300') == '150' %}selected{% endif %}>Short</option>
+                    <option value="300" selected>Medium</option>
+                    <option value="500">Detailed</option>
+                </select>
+                <select name="summary_format" class="format-select">
+                    <option value="paragraph">Paragraph</option>
+                    <option value="bullets">Bullet Points</option>
+                </select>
+                <button type="submit" class="analyze-button">Analyze Content</button>
+            </div>
+        </form>
+        <button class="chat-toggle" onclick="toggleChat()">💬</button>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <h3 class="chat-title">Analysis Assistant</h3>
+                <button class="chat-close" onclick="toggleChat()">×</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message-bubble bot-message">
+                    Hello! I'm your QuantumText assistant. How can I help today?
+                </div>
+            </div>
+            <div class="chat-input">
+                <input 
+                    type="text" 
+                    id="chatInput" 
+                    placeholder="Ask me about text analysis..."
+                    onkeypress="handleChatInput(event)"
+                    style="
+                        width: 100%;
+                        padding: 0.75rem;
+                        background: rgba(0, 0, 0, 0.3);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        border-radius: 12px;
+                        color: white;
+                    "
+                >
+            </div>
+        </div>
+        <div class="results-panel {% if summary %}visible{% endif %}">
+            {% if summary %}
+                <div class="summary-content">
+                    <h2>AI Summary</h2>
+                    <div id="summary-text">{{ summary }}</div>
+                </div>
+
+                <!-- Inside the results-panel div -->
+{% if wordcloud %}
+<div class="wordcloud-section">
+    <h3>Visual Word Cloud</h3>
+    <div class="wordcloud-container">
+        <img src="{{ wordcloud }}" alt="Content Word Cloud" class="wordcloud-image">
+    </div>
+    <p class="chart-caption">Most frequent terms visualized by importance</p>
+</div>
+{% endif %}
+
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Readability Score</div>
+                        <div class="metric-value">{{ readability.flesch|round(1) }}</div>
+                        <div class="metric-sub">(Flesch Reading Ease)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Education Level</div>
+                        <div class="metric-value">{{ readability.grade }}</div>
+                        <div class="metric-sub">(SMOG Index)</div>
+                    </div>
+                </div>
+
+                <form class="download-form" method="POST" action="/download">
+                    <button type="submit" name="format" value="text" class="download-button">Download Text</button>
+                    <button type="submit" name="format" value="pdf" class="download-button">Download PDF</button>
+                    <button type="submit" name="format" value="word" class="download-button">Download Word</button>
+                </form>
+            {% else %}
+                <div class="summary-content">
+                    <h2>Analysis Results</h2>
+                    <p>Your content analysis will appear here after processing.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.input-toggle').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const method = e.target.dataset.input;
+                document.querySelectorAll('.input-toggle').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                document.getElementById('input_method').value = method;
+                document.querySelectorAll('.input-section').forEach(section => section.classList.remove('active'));
+                document.getElementById(`${method}-input`).classList.add('active');
+                
+                if(method !== 'file') {
+                    document.querySelector('.file-upload-input').value = '';
+                    document.querySelector('.selected-file').textContent = '';
+                }
+            });
+        });
+
+        document.querySelector('.file-upload-input').addEventListener('change', (e) => {
+            const label = document.querySelector('.selected-file');
+            label.textContent = e.target.files.length > 0 
+                ? `Selected: ${e.target.files[0].name}` 
+                : '';
+        });
+
+        document.querySelector('form').addEventListener('submit', (e) => {
+            const method = document.getElementById('input_method').value;
+            if(method === 'file' && !document.querySelector('.file-upload-input').files.length) {
+                e.preventDefault();
+                alert('Please select a file to upload');
+            }
+            // Add event listener for format changes
+document.querySelector('.format-select').addEventListener('change', (e) => {
+    sessionStorage.setItem('preferredFormat', e.target.value);
+});
+        });
+
+        let chatVisible = false;
+
+        function toggleChat() {
+    const container = document.getElementById('chatContainer');
+    chatVisible = !chatVisible;
+    container.classList.toggle('chat-visible', chatVisible);
+    if (chatVisible) {
+        // Focus input when opening chat
+        document.getElementById('chatInput').focus();
+    }
+}
+
+document.getElementById('chatInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const message = this.value.trim();
+        if (!message) return;
+
+        // Clear input
+        this.value = '';
+        
+        // Add user message
+        const messagesDiv = document.getElementById('chatMessages');
+        messagesDiv.innerHTML += `
+            <div class="message-bubble user-message">
+                ${message}
+            </div>
+        `;
+
+        // Get bot response
+        fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({message: message})
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            messagesDiv.innerHTML += `
+                <div class="message-bubble bot-message">
+                    ${data.bot.replace(/\n/g, '<br>')}
+                </div>
+            `;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            messagesDiv.innerHTML += `
+                <div class="message-bubble bot-message">
+                    Sorry, I'm having trouble responding right now. Please try again later.
+                </div>
+            `;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+});
+
+function handleChatInput(e) {
+    if (e.key === 'Enter') {
+        const input = e.target;
+        const message = input.value.trim();
+        if (!message) return;
+
+        // Clear input immediately
+        input.value = '';
+        
+        // Add user message
+        const messagesDiv = document.getElementById('chatMessages');
+        messagesDiv.innerHTML += `
+            <div class="message-bubble user-message">
+                ${message}
+            </div>
+        `;
+
+        // Get bot response
+        fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({message: message})
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            messagesDiv.innerHTML += `
+                <div class="message-bubble bot-message">
+                    ${data.bot.replace(/\n/g, '<br>')}
+                </div>
+            `;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            messagesDiv.innerHTML += `
+                <div class="message-bubble bot-message">
+                    Sorry, I'm having trouble responding right now. Please try again later.
+                </div>
+            `;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+}
+
+function handleChatInput(e) {
+    if (e.key === 'Enter') {
+        const input = e.target;
+        const message = input.value.trim();
+        if (!message) return;
+
+        // Add user message
+        const messagesDiv = document.getElementById('chatMessages');
+        messagesDiv.innerHTML += `
+            <div class="message-bubble user-message">
+                ${message}
+            </div>
+        `;
+
+        // Get bot response
+        fetch('/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: message})
+        })
+        .then(r => r.json())
+        .then(response => {
+            messagesDiv.innerHTML += `
+                <div class="message-bubble bot-message">
+                    ${response.bot.replace(/\n/g, '<br>')}
+                </div>
+            `;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        input.value = '';
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+}
+
+
+
+    </script>
+</body>
+</html>
